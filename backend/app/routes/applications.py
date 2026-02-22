@@ -435,6 +435,10 @@ def verify_candidate(application_id: int, db: Session = Depends(get_db)):
         if api_key:
             import os
             os.environ["GROQ_API_KEY"] = api_key
+            # Bypass CrewAI/LiteLLM validation
+            os.environ["OPENAI_API_KEY"] = "dummy_for_crewai"
+            # Disable Telemetry to prevent threading signal crash
+            os.environ["CREWAI_TELEMETRY_OPTOUT"] = "true"
 
         from app.agents.verification_crew import run_verification
 

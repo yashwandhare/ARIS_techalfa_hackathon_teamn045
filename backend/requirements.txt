@@ -10,3 +10,5 @@ python-multipart
 psycopg2-binary
 crewai
 crewai-tools
+langchain-groq
+langchain-core

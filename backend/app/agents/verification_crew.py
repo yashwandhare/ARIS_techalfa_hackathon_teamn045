@@ -25,7 +25,13 @@ from app.agents.tools import (
 )
 
 
-LLM_MODEL = os.getenv("LLM_MODEL", "groq/llama3-70b-8192")
+from langchain_groq import ChatGroq
+
+_model_name = os.getenv("LLM_MODEL", "llama3-70b-8192")
+if _model_name.startswith("groq/"):
+    _model_name = _model_name[5:]
+
+LLM_INSTANCE = ChatGroq(model=_model_name)
 
 
 def _build_agents() -> dict[str, Agent]:
@@ -45,7 +51,7 @@ def _build_agents() -> dict[str, Agent]:
             "evidence speaks louder than claims."
         ),
         tools=[fetch_github_profile],
-        llm=LLM_MODEL,
+        llm=LLM_INSTANCE,
         verbose=True,
         allow_delegation=False,
     )
@@ -63,7 +69,7 @@ def _build_agents() -> dict[str, Agent]:
             "You are fair but thorough — you always provide evidence for your findings."
         ),
         tools=[cross_reference_claims],
-        llm=LLM_MODEL,
+        llm=LLM_INSTANCE,
         verbose=True,
         allow_delegation=False,
     )
@@ -82,7 +88,7 @@ def _build_agents() -> dict[str, Agent]:
             "precise, and always justify your scores with evidence."
         ),
         tools=[compute_candidate_scores],
-        llm=LLM_MODEL,
+        llm=LLM_INSTANCE,
         verbose=True,
         allow_delegation=False,
     )
@@ -101,7 +107,7 @@ def _build_agents() -> dict[str, Agent]:
             "their first month."
         ),
         tools=[],
-        llm=LLM_MODEL,
+        llm=LLM_INSTANCE,
         verbose=True,
         allow_delegation=False,
     )
