@@ -25,17 +25,19 @@ from app.agents.tools import (
 )
 
 
-from langchain_groq import ChatGroq
+def _get_llm_instance():
+    from langchain_groq import ChatGroq
+    _model_name = os.getenv("LLM_MODEL", "llama3-70b-8192")
+    if _model_name.startswith("groq/"):
+         _model_name = _model_name[5:]
+    # Initialize only when needed so that os.environ["GROQ_API_KEY"] is set
+    return ChatGroq(model=_model_name)
 
-_model_name = os.getenv("LLM_MODEL", "llama3-70b-8192")
-if _model_name.startswith("groq/"):
-    _model_name = _model_name[5:]
-
-LLM_INSTANCE = ChatGroq(model=_model_name)
 
 
 def _build_agents() -> dict[str, Agent]:
     """Create the 4 specialized verification agents."""
+    llm = _get_llm_instance()
 
     github_analyst = Agent(
         role="Senior GitHub Activity Analyst",
@@ -51,7 +53,7 @@ def _build_agents() -> dict[str, Agent]:
             "evidence speaks louder than claims."
         ),
         tools=[fetch_github_profile],
-        llm=LLM_INSTANCE,
+        llm=llm,
         verbose=True,
         allow_delegation=False,
     )
@@ -69,7 +71,7 @@ def _build_agents() -> dict[str, Agent]:
             "You are fair but thorough — you always provide evidence for your findings."
         ),
         tools=[cross_reference_claims],
-        llm=LLM_INSTANCE,
+        llm=llm,
         verbose=True,
         allow_delegation=False,
     )
@@ -88,7 +90,7 @@ def _build_agents() -> dict[str, Agent]:
             "precise, and always justify your scores with evidence."
         ),
         tools=[compute_candidate_scores],
-        llm=LLM_INSTANCE,
+        llm=llm,
         verbose=True,
         allow_delegation=False,
     )
