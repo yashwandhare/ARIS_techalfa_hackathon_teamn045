@@ -346,3 +346,77 @@ def update_status(
     db.commit()
     db.refresh(db_obj)
     return db_obj
+
+
+@router.post("/{application_id}/verify", response_model=ApplicationResponse)
+def verify_candidate(application_id: int, db: Session = Depends(get_db)):
+    """Trigger the full CrewAI agentic verification pipeline.
+
+    Runs 4 agents sequentially:
+      1. GitHub Analyst — audits real coding activity
+      2. Fraud Detector — cross-references resume claims
+      3. Compliance Manager — computes Trust Score
+      4. Onboarding Planner — generates training plan
+
+    Saves trust_score, verification_report_json, and training_plan_json.
+    """
+    db_obj = db.query(Application).filter(Application.id == application_id).first()
+    if not db_obj:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    # Parse resume skills for cross-referencing
+    resume_skills = []
+    try:
+        resume_data = json.loads(db_obj.resume_analysis_json or "{}")
+        resume_skills = (
+            resume_data.get("keywords_detected")
+            or resume_data.get("skill_keywords")
+            or []
+        )
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    # If no resume skills, try to extract from professional_json
+    if not resume_skills:
+        try:
+            professional = json.loads(db_obj.professional_json or "{}")
+            resume_skills = professional.get("primaryTechStack", [])
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    try:
+        from app.agents.verification_crew import run_verification
+
+        result = run_verification(
+            github_url=db_obj.github_url,
+            role_applied=db_obj.role_applied,
+            candidate_name=db_obj.full_name,
+            resume_skills=resume_skills,
+        )
+
+        # Save results
+        db_obj.trust_score = result.get("trust_score", 0.0)
+        db_obj.verification_report_json = json.dumps(
+            result.get("verification_report", {})
+        )
+
+        # Only overwrite training plan if crew produced one
+        crew_plan = result.get("training_plan")
+        if crew_plan and isinstance(crew_plan, dict) and crew_plan.get("weekly_plan"):
+            db_obj.training_plan_json = json.dumps(crew_plan)
+
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+
+    except ImportError:
+        raise HTTPException(
+            status_code=503,
+            detail="CrewAI not installed. Install crewai and crewai-tools.",
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Verification pipeline error: {str(exc)}",
+        )
