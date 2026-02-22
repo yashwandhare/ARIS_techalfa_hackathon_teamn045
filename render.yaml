@@ -15,7 +15,7 @@ services:
       - key: CREWAI_TELEMETRY_OPTOUT
         value: "true"
       - key: PYTHON_VERSION
-        value: "3.11"
+        value: "3.11.0"
 
   # ── Frontend ─────────────────────────────────────────────────────────────
   - type: web
