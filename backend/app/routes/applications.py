@@ -204,9 +204,50 @@ async def create_application(
             "growth_direction": f"Focus on strengthening {role_applied} specific skills.",
         })
 
+    # 8. Save initial database object
     db.add(db_obj)
     db.commit()
     db.refresh(db_obj)
+
+    # 9. Auto-trigger agentic verification if LLM key is configured
+    from app.services.llm_service import LLM_API_KEY
+    if LLM_API_KEY:
+        try:
+            from app.agents.verification_crew import run_verification
+
+            # Parse resume skills for claims cross-referencing
+            resume_skills = []
+            if resume_data:
+                resume_skills = (
+                    resume_data.get("keywords_detected")
+                    or resume_data.get("skill_keywords")
+                    or []
+                )
+
+            # Trigger CrewAI
+            result = run_verification(
+                github_url=db_obj.github_url,
+                role_applied=db_obj.role_applied,
+                candidate_name=db_obj.full_name,
+                resume_skills=resume_skills,
+            )
+
+            db_obj.trust_score = result.get("trust_score", 0.0)
+            db_obj.verification_report_json = json.dumps(
+                result.get("verification_report", {})
+            )
+
+            crew_plan = result.get("training_plan")
+            if crew_plan and isinstance(crew_plan, dict) and crew_plan.get("weekly_plan"):
+                db_obj.training_plan_json = json.dumps(crew_plan)
+
+            db.add(db_obj)
+            db.commit()
+            db.refresh(db_obj)
+        except Exception as e:
+            # If verification fails, log it but still return the created application
+            print(f"Auto-verification failed: {e}")
+
     return db_obj
 
 
