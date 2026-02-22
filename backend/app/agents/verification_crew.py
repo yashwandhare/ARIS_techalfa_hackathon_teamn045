@@ -109,7 +109,7 @@ def _build_agents() -> dict[str, Agent]:
             "their first month."
         ),
         tools=[],
-        llm=LLM_INSTANCE,
+        llm=llm,
         verbose=True,
         allow_delegation=False,
     )
