@@ -210,8 +210,12 @@ async def create_application(
     db.refresh(db_obj)
 
     # 9. Auto-trigger agentic verification if LLM key is configured
-    from app.services.llm_service import LLM_API_KEY
-    if LLM_API_KEY:
+    from app.services.llm_service import _get_api_key
+    api_key = _get_api_key()
+    if api_key:
+        # CrewAI via Groq requires GROQ_API_KEY in the environment
+        import os
+        os.environ["GROQ_API_KEY"] = api_key
         try:
             from app.agents.verification_crew import run_verification
 
@@ -426,6 +430,12 @@ def verify_candidate(application_id: int, db: Session = Depends(get_db)):
             pass
 
     try:
+        from app.services.llm_service import _get_api_key
+        api_key = _get_api_key()
+        if api_key:
+            import os
+            os.environ["GROQ_API_KEY"] = api_key
+
         from app.agents.verification_crew import run_verification
 
         result = run_verification(

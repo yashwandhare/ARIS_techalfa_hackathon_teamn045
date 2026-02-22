@@ -12,14 +12,18 @@ from typing import Any
 import httpx
 
 
-LLM_API_KEY = os.getenv("LLM_API_KEY")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
 LLM_MODEL = os.getenv("LLM_MODEL", "llama3-70b-8192")
 
 
+def _get_api_key():
+    return os.getenv("LLM_API_KEY")
+
+
 def _request_llm(messages: list[dict[str, str]], max_tokens: int = 2048) -> dict | None:
     """Send a chat completion request and parse JSON response."""
-    if not LLM_API_KEY:
+    api_key = _get_api_key()
+    if not api_key:
         return None
 
     payload = {
@@ -31,7 +35,7 @@ def _request_llm(messages: list[dict[str, str]], max_tokens: int = 2048) -> dict
     }
 
     headers = {
-        "Authorization": f"Bearer {LLM_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
 
