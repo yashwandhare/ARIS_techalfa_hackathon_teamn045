@@ -103,3 +103,11 @@ export async function updateStatus(
   });
   return handleResponse<any>(response);
 }
+
+export async function verifyApplication(id: string | number) {
+  const response = await fetch(`${BASE_URL}/applications/${id}/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  return handleResponse<any>(response);
+}
