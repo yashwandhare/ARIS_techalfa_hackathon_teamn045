@@ -16,7 +16,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from app.database import SessionLocal
+from app.database import SessionLocal, engine, Base
 from app.models.application import Application
 from app.services.digilocker_service import run_government_verification
 
@@ -114,6 +114,7 @@ def generate_mock_report(app: Application) -> tuple[float, dict]:
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
+    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         apps = db.query(Application).all()

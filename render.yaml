@@ -1,3 +1,9 @@
+databases:
+  - name: aris-db
+    databaseName: aris
+    user: aris
+    plan: free
+
 services:
   # ── Backend ──────────────────────────────────────────────────────────────
   - type: web
@@ -5,7 +11,7 @@ services:
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: python seed_audit.py && gunicorn app.main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    startCommand: python seed_mock_data.py && python seed_audit.py && gunicorn app.main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
     plan: free
     envVars:
       - key: LLM_API_KEY
@@ -16,6 +22,10 @@ services:
         value: "true"
       - key: PYTHON_VERSION
         value: "3.11.0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aris-db
+          property: connectionString
 
   # ── Frontend ─────────────────────────────────────────────────────────────
   - type: web

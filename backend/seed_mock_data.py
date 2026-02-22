@@ -11,7 +11,6 @@ sys.path.insert(0, os.path.dirname(__file__))
 from app.database import SessionLocal, engine, Base
 from app.models.application import Application
 
-Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 
@@ -395,6 +394,11 @@ PROFILES = [
 def seed():
     db = SessionLocal()
     try:
+        count = db.query(Application).count()
+        if count > 0:
+            print(f"Database already has {count} applications. Skipping mock data seed.")
+            return
+
         for profile in PROFILES:
             app = Application(**profile)
             db.add(app)
